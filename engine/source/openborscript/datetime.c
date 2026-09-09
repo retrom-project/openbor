@@ -37,7 +37,7 @@ typedef struct s_datetime_windows_filetime {
 
 DATETIME_WINDOWS_IMPORT void DATETIME_WINDOWS_CALL GetSystemTimeAsFileTime(s_datetime_windows_filetime *file_time);
 
-#elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__)
+#elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
 #include <sys/time.h>
 #else
 #error datetime.c currently supports Windows, Linux, macOS, and Android.

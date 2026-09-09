@@ -1,0 +1,44 @@
+name: Retrom Core Release
+on:
+  push:
+    tags: ["retrom-core-g9d81480f8481-r*"]
+permissions:
+  contents: write
+concurrency:
+  group: retrom-core-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate annotated release tag
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^retrom-core-g9d81480f8481-r[1-9][0-9]*(-rc\.[1-9][0-9]*)?$ ]]
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          test "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag
+          test "$(git rev-list -n 1 "refs/tags/$GITHUB_REF_NAME")" = "$GITHUB_SHA"
+          git fetch --no-tags origin '+refs/heads/retrom/g9d81480f8481:refs/remotes/origin/retrom/g9d81480f8481'
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/retrom/g9d81480f8481
+          python3 .github/rpg-runtime/verify-source.py
+      - name: Run regression tests
+        run: |
+          python3 -m unittest discover -s .github/rpg-runtime -p 'test_*.py'
+      - name: Build release assets
+        run: |
+          python3 .github/rpg-runtime/build-release.py \
+            --output "$RUNNER_TEMP/openbor-release" \
+            --repository "https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$GITHUB_REF_NAME" --commit "$GITHUB_SHA"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=()
+          if [[ "$GITHUB_REF_NAME" == *-rc.* ]]; then prerelease+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" "${prerelease[@]}" --verify-tag --target "$GITHUB_SHA" \
+            --title "OpenBOR $GITHUB_REF_NAME" --generate-notes "$RUNNER_TEMP/openbor-release/"*

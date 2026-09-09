@@ -31,6 +31,9 @@
 #include "screen.h"
 #include "packfile.h"
 #include "pngdec.h"
+#ifdef __EMSCRIPTEN__
+#include "../../web/image.h"
+#endif
 
 // ============================== Globals ===============================
 #define HANDLE_UNUSED -1
@@ -596,6 +599,44 @@ readpng_abort:
     return 0;
 }
 
+#ifdef __EMSCRIPTEN__
+/* Retrom legacy indexed GIF path. The current upstream PNG loader is unchanged. */
+static SDL_Surface *gif_image;
+static int openlegacygif(const char *filename, const char *packfilename) {
+    if (gif_image) { SDL_FreeSurface(gif_image); gif_image = NULL; }
+    int file = openpackfile(filename, packfilename);
+    if (file < 0) return 0;
+    packfile_signed_offset_t size = seekpackfile64(file, 0, SEEK_END);
+    if (size < 13 || size > 64 * 1024 * 1024 || seekpackfile64(file, 0, SEEK_SET) != 0) {
+        closepackfile(file); return 0;
+    }
+    unsigned char *bytes = malloc((size_t)size);
+    if (bytes && readpackfile(file, bytes, (int)size) == size) gif_image = retrom_gif_load(bytes, (size_t)size);
+    free(bytes); closepackfile(file);
+    if (!gif_image) return 0;
+    image_res.width = gif_image->w; image_res.height = gif_image->h;
+    return 1;
+}
+static int readlegacygif(unsigned char *buf, unsigned char *pal, int width, int height) {
+    if (!gif_image) return 0;
+    if (pal) {
+        memset(pal, 0, PAL_BYTES);
+        for (int i = 0; i < gif_image->format->palette->ncolors; i++) {
+            SDL_Color color = gif_image->format->palette->colors[i];
+            ((uint32_t *)pal)[i] = colour32(color.r, color.g, color.b);
+        }
+    }
+    if (buf) {
+        memset(buf, 0, (size_t)width * height);
+        int copy_width = width < gif_image->w ? width : gif_image->w;
+        for (int y = 0; y < height && y < gif_image->h; y++) {
+            memcpy(buf + y * width, (unsigned char *)gif_image->pixels + y * gif_image->pitch, copy_width);
+        }
+    }
+    return 1;
+}
+#endif
+
 // ============================== auto loading ===============================
 /*
 * Caskey, Damon V.
@@ -609,7 +650,8 @@ readpng_abort:
 */
 typedef enum open_type_enum {
     OT_NONE = 0,
-    OT_PNG
+    OT_PNG,
+    OT_GIF
 } open_type_enum;
     
 static open_type_enum open_type = OT_NONE;
@@ -686,6 +728,12 @@ static int openimage(char *filename, char *packfile) {
     */
 
     if(ext) {
+#ifdef __EMSCRIPTEN__
+        if(stricmp(ext, ".gif") == 0) {
+            if(openlegacygif(filename, packfile)) { open_type = OT_GIF; return 1; }
+            return 0;
+        }
+#endif
 
         if(stricmp(ext, ".png") == 0) {
 
@@ -713,6 +761,10 @@ static int openimage(char *filename, char *packfile) {
         return 1;
     }
 
+#ifdef __EMSCRIPTEN__
+    snprintf(fnam, sizeof(fnam), "%s.gif", filename);
+    if(openlegacygif(fnam, packfile)) { open_type = OT_GIF; return 1; }
+#endif
     return 0;
 }
 
@@ -722,6 +774,11 @@ static int readimage(unsigned char *buf, unsigned char *pal, int maxwidth, int m
 
     switch(open_type)
     {
+#ifdef __EMSCRIPTEN__
+    case OT_GIF:
+        result = readlegacygif(buf, pal, maxwidth, maxheight);
+        break;
+#endif
     case OT_PNG:
         result = readpng(buf, pal, maxwidth, maxheight);
 #ifdef VERBOSE
@@ -741,6 +798,9 @@ static int readimage(unsigned char *buf, unsigned char *pal, int maxwidth, int m
 
 static void closeimage()
 {
+#ifdef __EMSCRIPTEN__
+    if (gif_image) { SDL_FreeSurface(gif_image); gif_image = NULL; }
+#endif
     if(open_type == OT_PNG)
     {
         closepng();

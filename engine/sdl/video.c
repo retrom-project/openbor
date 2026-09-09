@@ -14,6 +14,9 @@
 
 #include "sdlport.h"
 #include <math.h>
+#ifdef __EMSCRIPTEN__
+extern void retrom_web_frame(void);
+#endif
 #include "types.h"
 #include "video.h"
 #include "vga.h"
@@ -42,7 +45,10 @@ int brightness = 0;
 void initSDL()
 {
 	SDL_DisplayMode video_info;
-	int init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC;
+	int init_flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
+#ifndef __EMSCRIPTEN__
+    init_flags |= SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC;
+#endif
 
 	SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
 
@@ -227,6 +233,9 @@ void blit()
 	SDL_RenderFillRect(renderer, NULL);
 
 	SDL_RenderPresent(renderer);
+#ifdef __EMSCRIPTEN__
+    retrom_web_frame();
+#endif
 }
 
 void FramerateDelay()
@@ -268,6 +277,9 @@ void video_clearscreen()
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	SDL_RenderClear(renderer);
 	SDL_RenderPresent(renderer);
+#ifdef __EMSCRIPTEN__
+    retrom_web_frame();
+#endif
 }
 
 void video_stretch(int enable)
