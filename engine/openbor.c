@@ -51469,7 +51469,7 @@ void update(int ingame, int usevwait)
     int i = 0;
     int p_keys = 0;
 
-#if SDL
+#if SDL && !defined(__EMSCRIPTEN__)
     if (savedata.fpslimit == 1) // vsync enabled
     {
         // To reduce input latency, wait until the last 4 ms (4000 us) of the current
@@ -54444,7 +54444,7 @@ void init_videomodes(int log)
 
     // Use an alternative video.txt if there is one.  Some of these are long filenames; create your PAKs with borpak and you'll be fine.
 #define tryfile(X) if((tmp=openpackfile(X,packfile))!=-1) { closepackfile(tmp); filename=X; goto readfile; }
-#if WIN || LINUX
+#if WIN || LINUX || defined(__EMSCRIPTEN__)
     tryfile("data/videopc.txt");
 #endif
 #undef tryfile

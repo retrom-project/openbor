@@ -15460,7 +15460,7 @@ HRESULT openbor_updateframe(ScriptVariant **varlist , ScriptVariant **pretvar, i
 {
     LONG f;
     entity *e;
-    void update_frame(entity * ent, int f);
+    void update_frame(entity * ent, uint64_t f);
 
     *pretvar = NULL;
     if(paramCount < 2)
@@ -15491,7 +15491,7 @@ HRESULT openbor_updateframe(ScriptVariant **varlist , ScriptVariant **pretvar, i
         goto updateframe_error;
     }
 
-    update_frame(e, (int)f);
+    update_frame(e, (uint64_t)f);
 
     return S_OK;
 

@@ -17,6 +17,9 @@
 #include "openbor.h"
 
 #define T_AXIS 7000
+#ifdef __EMSCRIPTEN__
+extern void retrom_web_keys(unsigned char *keys);
+#endif
 
 #ifdef ANDROID
 #include "jniutils.h"
@@ -864,6 +867,12 @@ void control_update(s_playercontrols ** playercontrols, int numplayers)
 	Uint8* keystate_def = (Uint8*)SDL_GetKeyState(NULL); // Here retrieve keyboard state for default
 
 	getPads(keystate,keystate_def);
+#ifdef __EMSCRIPTEN__
+    Uint8 browser_keys[SDL_NUM_SCANCODES];
+    memcpy(browser_keys, keystate, sizeof(browser_keys));
+    retrom_web_keys(browser_keys);
+    keystate = keystate_def = browser_keys;
+#endif
 
 	for(player = 0; player < numplayers; player++){
 

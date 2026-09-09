@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.22)
+project(OpenBORWeb LANGUAGES C)
+if(NOT EMSCRIPTEN)
+  message(FATAL_ERROR "Use the pinned Emscripten toolchain")
+endif()
+set(CMAKE_C_STANDARD 99)
+set(ENGINE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+file(GLOB CORE "${ENGINE}/*.c")
+file(GLOB_RECURSE LIBS "${ENGINE}/source/*.c")
+list(FILTER LIBS EXCLUDE REGEX "/(webmlib)/|/ramlib/ram\.c$|test")
+file(GLOB SDL_SOURCES "${ENGINE}/sdl/*.c")
+list(FILTER SDL_SOURCES EXCLUDE REGEX "/(loadgl|opengl)\\.c$")
+add_executable(openbor ${CORE} ${LIBS} ${SDL_SOURCES} host.c image.c)
+target_include_directories(openbor PRIVATE "${ENGINE}" "${ENGINE}/sdl" "${ENGINE}/source")
+foreach(DIR gamelib gfxlib openborscript pnglib preprocessorlib ramlib randlib scriptlib tracelib2 webmlib)
+  target_include_directories(openbor PRIVATE "${ENGINE}/source/${DIR}")
+endforeach()
+target_compile_definitions(openbor PRIVATE SDL=1 stricmp=strcasecmp strnicmp=strncasecmp OV_EXCLUDE_STATIC_CALLBACKS)
+target_compile_options(openbor PRIVATE -O2 -Wall -Werror -fsigned-char -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=[\"gif\"]" -sUSE_LIBPNG=1 -sUSE_VORBIS=1 -sUSE_OGG=1 -sUSE_ZLIB=1)
+target_link_options(openbor PRIVATE -O2 -Wl,--fatal-warnings -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=[\"gif\"]" -sUSE_LIBPNG=1 -sUSE_VORBIS=1 -sUSE_OGG=1 -sUSE_ZLIB=1
+  -sASYNCIFY=1 -sASYNCIFY_STACK_SIZE=1048576 -sSTACK_SIZE=2097152 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864
+  -sMAXIMUM_MEMORY=2147483648 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createOpenBOR -sENVIRONMENT=web
+  -sEMIT_EMSCRIPTEN_LICENSE=1 -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXPORTED_FUNCTIONS=_main
+  --pre-js "${CMAKE_CURRENT_SOURCE_DIR}/host-pre.js")
+set_target_properties(openbor PROPERTIES SUFFIX ".mjs")
