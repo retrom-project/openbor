@@ -20,6 +20,11 @@ yield; it does not divide by SDL's unavailable desktop display refresh rate.
 The SDL WebGL context retains its drawing buffer for paused screenshots and
 checkpoint thumbnails; capturing a frame does not advance the engine.
 
+Optional sprites may be absent. The sprite queue rejects negative/out-of-range
+IDs and missing map nodes before dereferencing them, and does not enqueue a
+failed lazy load. This also covers the forward indicator when a game has no
+supported arrow asset. Wasm builds retain function names for crash diagnosis.
+
 Run the PFB's explicit `pfb-core-build CORE=openbor` command. The fork-owned
 `.github/rpg-runtime/build-candidate.sh OUTPUT` writes a closed candidate with
 JS, WASM, OpenBOR license and dependency notice bytes, source identity, ABI and per-file SHA-256. Build

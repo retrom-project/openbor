@@ -17,7 +17,7 @@ foreach(DIR gamelib gfxlib openborscript pnglib preprocessorlib ramlib randlib s
 endforeach()
 target_compile_definitions(openbor PRIVATE SDL=1 stricmp=strcasecmp strnicmp=strncasecmp OV_EXCLUDE_STATIC_CALLBACKS)
 target_compile_options(openbor PRIVATE -O2 -Wall -Werror -fsigned-char -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=[\"gif\"]" -sUSE_LIBPNG=1 -sUSE_VORBIS=1 -sUSE_OGG=1 -sUSE_ZLIB=1)
-target_link_options(openbor PRIVATE -O2 -Wl,--fatal-warnings -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=[\"gif\"]" -sUSE_LIBPNG=1 -sUSE_VORBIS=1 -sUSE_OGG=1 -sUSE_ZLIB=1
+target_link_options(openbor PRIVATE -O2 -g2 -Wl,--fatal-warnings -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 "-sSDL2_IMAGE_FORMATS=[\"gif\"]" -sUSE_LIBPNG=1 -sUSE_VORBIS=1 -sUSE_OGG=1 -sUSE_ZLIB=1
   -sASYNCIFY=1 -sASYNCIFY_STACK_SIZE=1048576 -sSTACK_SIZE=2097152 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864
   -sMAXIMUM_MEMORY=2147483648 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createOpenBOR -sENVIRONMENT=web
   -sEMIT_EMSCRIPTEN_LICENSE=1 -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain -sEXPORTED_FUNCTIONS=_main
