@@ -92,13 +92,21 @@ void spriteq_add_frame(int x, int y, int z, s_sprite *frame, s_drawmethod *pdraw
 void spriteq_add_sprite(int x, int y, int z, int id, s_drawmethod *pdrawmethod, int sortid)
 {
     extern s_sprite_map *sprite_map;
+    extern uint64_t sprites_loaded;
     s_sprite *loadsprite2(char * filename, int * width, int * height);
-    s_sprite *frame = sprite_map[id].node->sprite;
+    s_sprite *frame;
+    /* Optional assets use -1 when absent. Validate before indexing the map,
+     * including deferred draws after the current scene has been unloaded. */
+    if(!sprite_map || id < 0 || (uint64_t)id >= sprites_loaded || !sprite_map[id].node)
+    {
+        return;
+    }
+    frame = sprite_map[id].node->sprite;
     if(frame == NULL)
     {
         sprite_map[id].node->sprite = frame = loadsprite2(sprite_map[id].node->filename, NULL, NULL);
     }
-    if(spritequeue_len >= MAXQSPRITES)
+    if(frame == NULL || spritequeue_len >= MAXQSPRITES)
     {
         return;
     }
@@ -380,7 +388,6 @@ void spriteq_clear()
         spritequeue_len = 0;
     }
 }
-
 
 
 
